@@ -1,3 +1,3 @@
 # mysite-backend
 
-This is API backend for My site using Serverless framework
+This is API backend for www.adominus.com using Serverless framework
