@@ -18,7 +18,7 @@ custom:
 
 provider:
   name: aws
-  runtime: nodejs8.10
+  runtime: nodejs10.x
   stage: ${self:custom.secrets.NODE_ENV}
   region: us-east-1
   environment:
@@ -29,13 +29,60 @@ provider:
     - Effect: "Allow"
       Action:
         - "ses:SendEmail"
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
       Resource: "*"
-
 functions:
   send:
     handler: handler.send
+    description: Send Email Function
     events:
       - http:
           path: email/send
           method: post
           cors: true
+  comment:
+    handler: handler.comment
+    description: Post Comment Function
+    events:
+      - http:
+          path: comment
+          method: post
+          cors: true
+  getComment:
+    handler: handler.getComment
+    description: Get Comment based on Post Function
+    events:
+      - http:
+          path: post/comments
+          method: post
+          cors: true
+resources:
+  Resources:
+    CognitoUserPool:
+      Type: "AWS::Cognito::UserPool"
+      Properties:
+        MfaConfiguration: OFF
+        UserPoolName: ${self:custom.secrets.NODE_ENV}-user-pool
+        UsernameAttributes:
+          - email
+        AutoVerifiedAttributes:
+          - email
+        Policies:
+          PasswordPolicy:
+            MinimumLength: 6
+            RequireLowercase: False
+            RequireNumbers: True
+            RequireSymbols: False
+            RequireUppercase: True
+    CognitoUserPoolClient:
+      Type: "AWS::Cognito::UserPoolClient"
+      Properties:
+        ClientName: ${self:custom.secrets.NODE_ENV}-user-pool-client
+        GenerateSecret: False
+        UserPoolId:
+          Ref: CognitoUserPool
